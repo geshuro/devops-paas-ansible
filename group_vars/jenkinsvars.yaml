@@ -1,0 +1,897 @@
+workspace: tec
+namespace: devops
+output_path: /tmp/ansible_tasks
+desired_deployment_name: jenkins
+helmchart_path: tmp/deploy_helms/sunat-cuc-jenkins-helmchart/
+
+ingress_certificate_secret:  '{{ "sunat-wildcard-secret"  if workspace == "shared" else  "sunat-tecnico-wildcard-secret" }}'
+
+admin_user_credentials_secret: jenkins-admin-credentials-secret
+admin_user_credentials_secret_userKey: jenkins-admin-user
+admin_user_credentials_secret_passwordKey: jenkins-admin-password
+
+
+admin_user_user_value: admin
+admin_user_password_value: bkpKn4F70V
+
+jenkins_image: jenkins/jenkins
+jenkins_imageTag: 2.259-jdk11
+jenkins_imagePullPolicy: IfNotPresent
+
+jenkins_agentsCap: 15
+jenkins_persistence: |
+  storageClass: gp2
+  accessMode: "ReadWriteOnce"
+  size: "10Gi"
+
+jenkins_installPlugins: |
+  - jdk-tool:1.4
+  - workflow-support:3.5
+  - matrix-project:1.17
+  - jaxb:2.3.0.1
+  - lockable-resources:2.8
+  - credentials-binding:1.23
+  - metrics:4.0.2.6
+  - workflow-durable-task-step:2.36
+  - cloudbees-folder:6.14
+  - ace-editor:1.1
+  - command-launcher:1.4
+  - workflow-cps-global-lib:2.17
+  - workflow-step-api:2.22
+  - pipeline-model-extensions:1.7.1
+  - authentication-tokens:1.4
+  - git-server:1.9
+  - workflow-aggregator:2.6
+  - pipeline-stage-step:2.5
+  - plain-credentials:1.7
+  - echarts-api:4.8.0-2
+  - ssh-credentials:1.18.1
+  - pipeline-model-api:1.7.1
+  - workflow-scm-step:2.11
+  - prometheus:2.0.7
+  - workflow-job:2.39
+  - configuration-as-code:1.43
+  - external-monitor-job:1.7
+  - jsch:0.1.55.2
+  - greenballs:1.15
+  - display-url-api:2.3.3
+  - branch-api:2.6.0
+  - antisamy-markup-formatter:2.1
+  - handlebars:1.1.1
+  - pipeline-rest-api:2.14
+  - jquery-detached:1.2.1
+  - git-client:3.4.2
+  - momentjs:1.1.1
+  - jquery3-api:3.5.1-1
+  - snakeyaml-api:1.26.4
+  - durable-task:1.34
+  - structs:1.20
+  - pipeline-input-step:2.11
+  - pipeline-build-step:2.13
+  - script-security:1.74
+  - pipeline-graph-analysis:1.10
+  - scm-api:2.6.3
+  - mailer:1.32
+  - workflow-api:2.40
+  - workflow-basic-steps:2.20
+  - extended-read-permission:3.2
+  - git:4.4.2
+  - pipeline-stage-view:2.14
+  - variant:1.3
+  - cloudbees-disk-usage-simple:0.10
+  - ldap:1.24
+  - credentials:2.3.13
+  - job-dsl:1.77
+  - xml-job-to-job-dsl:0.1.13
+  - github:1.12.0
+  - trilead-api:1.0.8
+  - windows-slaves:1.6
+  - pipeline-milestone-step:1.3.1
+  - workflow-cps:2.82
+  - jackson2-api:2.11.2
+  - plugin-util-api:1.2.4
+  - apache-httpcomponents-client-4-api:4.5.10-2.0
+  - kubernetes-credentials:0.7.0
+  - workflow-multibranch:2.22
+  - pipeline-stage-tags-metadata:1.7.1
+  - kubernetes-client-api:4.9.2-2
+  - pam-auth:1.6
+  - junit:1.32
+  - pipeline-model-definition:1.7.1
+  - matrix-auth:2.6.2
+  - bouncycastle-api:2.18
+  - kubernetes:1.27.0
+
+jenkins_ingressroute_dns: '{{ "jenkins.devops-internal.sunat-cuc.int"  if workspace == "shared" else  "jenkinstec.devops-internal.sunat-cuc-tecnico.int" }}'
+
+jenkins_ingressroute: |
+  redirect_http_to_https: true
+  match: "Host(`{{ jenkins_ingressroute_dns }}`)"
+  tls:
+    domains:
+    - main: {{ jenkins_ingressroute_dns }}
+    secretName: {{ ingress_certificate_secret }}
+
+jenkins_serviceAnnotations: |
+  prometheus.io/path: /prometheus
+  prometheus.io/port: "8080"
+  prometheus.io/scheme: http
+  prometheus.io/scrape: "true"
+
+jenkins_resources: |
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "2000m"
+    memory: "4096Mi"
+
+jenkins_enableXmlConfig: true
+jenkins_overwriteConfig: true
+jenkins_overwriteJobs: true
+
+jenkins_JCasC: |
+  defaultConfig: true
+  configScripts:
+
+    credentials: |
+      credentials:
+        system:
+          domainCredentials:
+          - credentials:
+            - string:
+                id: "devops-secret"
+                scope: GLOBAL
+                secret: "cambiame"
+            - usernamePassword:
+                id: "Gitlab-m2m-user"
+                password: "cambiame"
+                scope: GLOBAL
+                username: "jenkins"
+            - usernamePassword:
+                id: "devops-sonar-dev-secret"
+                password: "cambiame"
+                scope: GLOBAL
+                username: "admin"
+            - usernamePassword:
+                id: "devops-artifactory-dev-secret"
+                password: "cambiame"
+                scope: GLOBAL
+                username: "admin"
+
+
+    jenkins: |
+      jenkins:
+        systemMessage: "Bienvenido este jenkins fue aprovisionado automaticamente como codigo para el proyecto SCUC"
+
+    jobs: |
+      jobs:
+      - script: >
+          folder("BACKEND") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          folder("DEV") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          folder("FRONTEND") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          folder("API") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          folder("KAFKA") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          folder("QA") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          folder("PROD") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          pipelineJob("BACKEND/angular-petclinic") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/angular-petclinic.git")
+              stringParam("HOST_JFCR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("URL_GITLAB_UTILS_NPM", "shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sunat-cuc-pipeline-utils-angular.git")
+              stringParam("URL_SONAR", "https://sonar.devops-internal.sunat-cuc.int")
+              stringParam("GIT_BRANCH_DEV", "develop")
+              stringParam("PATH_UTILS_NPM", "/app/library/sunat-cuc-pipeline-utils-angular")
+              stringParam("NAME_NAMESPACE_JENKINS", "devops")
+              stringParam("NAME_NPM_GROUP_REPOSITORY", "npm-remote")
+              stringParam("NAME_NPM_REPOSITORY", "npm-local")
+              stringParam("HOST_ARTIFACTORY", "artifactory.devops-internal.sunat-cuc.int")
+              stringParam("GIT_BRANCH_REF", "develop", "Rama de referencia de construcción (para entorno de desarrollo = develop = GIT_BRANCH_DEV)")
+              stringParam("DEPLOY_AND_TEST", "true", "especifica si se debe desplegar el proyecto o se trata de una librería")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/angular-petclinic.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("DEV/generar-proyecto-documentacion-pipeline") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/documentacion/doc-archetype.git")
+              stringParam("PROJECT_NAME", "sunat-cuc-doc-HERRAMIENTA")
+              stringParam("VERSION_TAG", "v1.0.0")
+              stringParam("HOST_ARTIFACTORY", "artifactory.devops-internal.sunat-cuc.int")
+              stringParam("HOST_JFCR", "jfcr.devops-internal.sunat-cuc.int")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/documentacion/doc-archetype.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          folder("BASEIMAGES") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          pipelineJob("BASEIMAGES/angular-pipeline-image-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/angular-pipeline-image.git")
+              stringParam("HOST_JFROG_CR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("DIRECTORY", "angular-pipeline-image")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/angular-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("BASEIMAGES/helm-pipeline-image-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/helm-pipeline-image.git")
+              stringParam("HOST_JFROG_CR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("DIRECTORY", "helm3-pipeline-image")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/helm-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("BASEIMAGES/java-pipeline-image-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/java-pipeline-image.git")
+              stringParam(" HOST_JFROG_CR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("DIRECTORY", "java-pipeline-image")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/java-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("BASEIMAGES/openssl-pipeline-image-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/openssl-pipeline-image.git")
+              stringParam("HOST_JFROG_CR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("DIRECTORY", "openssl-pipeline-image")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/openssl-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("BASEIMAGES/skopeo-pipeline-image-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/skopeo-pipeline-image.git")
+              stringParam("HOST_JFROG_CR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("DIRECTORY", "skopeo-pipeline-image")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/skopeo-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("BASEIMAGES/sonar-scanner-pipeline-image-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sonarqube-pipeline-image.git")
+              stringParam("HOST_JFROG_CR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("DIRECTORY", "sonar-scanner-pipeline-image")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sonarqube-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          folder("TEMPLATES") {
+              description "The folder contains all jobs for regular tests"
+              properties {
+                  folderCredentialsProperty {
+                      domainCredentials {
+                          domainCredentials {
+                              domain {
+                                  name("global")
+                                  description("Credentials necessary for our tests")
+                              }
+                              credentials {
+                                  basicSSHUserPrivateKey {
+                                      scope("GLOBAL")
+                                      id("test_bahs_id")
+                                      username("tsshdev")
+                                      privateKeySource {}
+                                      passphrase("misu")
+                                      description("User for deployments")
+                                  }
+                                  usernamePasswordCredentialsImpl {
+                                      scope("GLOBAL")
+                                      id("test_user_id")
+                                      description("User for deployments on test environment")
+                                      username("test_user_dev")
+                                      password("password")
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      - script: >
+          pipelineJob("TEMPLATES/angular-petclinic-template") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/angular-petclinic.git")
+              stringParam("HOST_JFCR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("URL_GITLAB_UTILS_NPM", "shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sunat-cuc-pipeline-utils-angular.git")
+              stringParam("URL_SONAR", "https://sonar.devops-internal.sunat-cuc.int")
+              stringParam("GIT_BRANCH_DEV", "develop")
+              stringParam("PATH_UTILS_NPM", "/app/library/sunat-cuc-pipeline-utils-angular")
+              stringParam("NAME_NAMESPACE_JENKINS", "devops")
+              stringParam("NAME_NPM_GROUP_REPOSITORY", "npm-remote")
+              stringParam("NAME_NPM_REPOSITORY", "npm-local")
+              stringParam("HOST_ARTIFACTORY", "artifactory.devops-internal.sunat-cuc.int")
+              stringParam("GIT_BRANCH_REF", "develop", "Rama de referencia de construcción (para entorno de desarrollo = develop = GIT_BRANCH_DEV)")
+              stringParam("DEPLOY_AND_TEST", "true", "especifica si se debe desplegar el proyecto o se trata de una librería")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/angular-petclinic.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("TEMPLATES/spring-library-java") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/backend/arquetipos/spring-library-java.git")
+              stringParam("HOST_JFCR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("URL_GITLAB_UTILS_JAVA11", "shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sunat-cuc-pipeline-utils-springboot-gradle.git", "URL_GITLAB_UTILS_JAVA11")
+              stringParam("URL_SONAR", "https://sonar.devops-internal.sunat-cuc.int")
+              stringParam("GIT_BRANCH_DEV", "develop")
+              stringParam("PATH_UTILS_JAVA11", "/app/library/sunat-cuc-pipeline-utils-springboot-gradle", "sunat-cuc-pipeline-utils-springboot")
+              stringParam("NAME_NAMESPACE_JENKINS", "devops")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/backend/arquetipos/spring-library-java.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/develop")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("TEMPLATES/spring-petclinic") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/spring-petclinic.git")
+              stringParam("HOST_JFCR", "jfcr.devops-internal.sunat-cuc.int")
+              stringParam("URL_GITLAB_UTILS_JAVA11", "shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sunat-cuc-pipeline-utils-springboot.git", "URL_GITLAB_UTILS_JAVA11")
+              stringParam("URL_SONAR", "https://sonar.devops-internal.sunat-cuc.int")
+              stringParam("GIT_BRANCH_DEV", "develop")
+              stringParam("PATH_UTILS_JAVA11", "/app/library/sunat-cuc-pipeline-utils-springboot", "sunat-cuc-pipeline-utils-springboot")
+              stringParam("NAME_NAMESPACE_JENKINS", "devops")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/spring-petclinic.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/develop")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("TEMPLATES/swagger-petclinic-api-master") {
+            description()
+            keepDependencies(false)
+            parameters {
+              stringParam("URL_GITLAB", "https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/swagger-petclinic-api.git")
+              stringParam("URL_GITLAB_UTILS_API", "shared-gitlab-devops.sunat-cuc.int/devops/pipelines/sunat-cuc-pipeline-utils-api.git")
+              stringParam("PATH_UTILS_API", "/app/library/sunat-cuc-pipeline-utils-api")
+              stringParam("GIT_BRANCH_DEV", "develop")
+              stringParam("NAME_NAMESPACE_JENKINS", "devops")
+              stringParam("GIT_BRANCH_REF", "develop")
+              stringParam("DEPLOY_AND_TEST", "true")
+            }
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/swagger-petclinic-api.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+      - script: >
+          pipelineJob("TEMPLATES/test-pipeline-lib-master") {
+            description()
+            keepDependencies(false)
+            definition {
+              cpsScm {
+                scm {
+                  git {
+                    remote {
+                      github("https://shared-gitlab-devops.sunat-cuc.int/devops/pipelines/test-pipeline-image.git", "https")
+                      credentials("Gitlab-m2m-user")
+                    }
+                    branch("*/master")
+                  }
+                }
+                scriptPath("Jenkinsfile")
+              }
+            }
+            disabled(false)
+          }
+
+    custom: |
+      unclassified:
+        location:
+          adminAddress: "admin@example.com"
+          url: "https://{{ jenkins_ingressroute_dns }}"
+        prometheusConfiguration:
+          collectingMetricsPeriodInSeconds: 120
+          countAbortedBuilds: true
+          countFailedBuilds: true
+          countNotBuiltBuilds: true
+          countSuccessfulBuilds: true
+          countUnstableBuilds: true
+          defaultNamespace: "default"
+          fetchTestResults: true
+          jobAttributeName: "jenkins_job"
+          path: "prometheus"
+          processingDisabledBuilds: true
+          useAuthenticatedEndpoint: false
+        globalLibraries:
+          libraries:
+            - name: "sunat-cuc-pipeline-lib"
+              defaultVersion: "{{ globalrepobranch }}"
+              implicit: true
+              retriever:
+                modernSCM:
+                  scm:
+                    git:
+                      credentialsId: "Gitlab-m2m-user"
+                      remote: "{{ globalrepourl }}"
+
+
+
+
+
+
+
+
+
+jenkins_jobsasxml: |
+  testJenkinsJob: |-
+    <?xml version='1.1' encoding='UTF-8'?>
+    <flow-definition plugin="workflow-job@2.39">
+      <description></description>
+      <keepDependencies>false</keepDependencies>
+      <properties/>
+      <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.82">
+        <script>podTemplate(label: &apos;jnlp-petclinic&apos;, slaveConnectTimeout: &apos;600&apos;, envVars: [envVar(key: &apos;GIT_BRANCH&apos;, value: &apos;master&apos;)], containers: [
+        containerTemplate(
+                name: &apos;maven&apos;,
+                image: &apos;maven:3.6.3-jdk-11&apos;,
+                ttyEnabled: true,
+                resourceLimitCpu: &apos;1000m&apos;,
+                resourceLimitMemory: &apos;768Mi&apos;,
+                resourceRequestCpu: &apos;250m&apos;,
+                resourceRequestMemory: &apos;256Mi&apos;,
+                command: &apos;cat&apos;,
+                envVars: [
+                ]
+        )
+    ]
+    ) {
+        node(&apos;jnlp-petclinic&apos;) {
+            stage(&apos;Hello World&apos;) {
+                container(&apos;maven&apos;) {
+                  stage(&apos;Hello from Jenkins&apos;) {
+                      sh &apos;&apos;&apos;#!/bin/bash
+                      echo Hello From Ephemeral Agent
+                      &apos;&apos;&apos;
+                  }
+                }
+            }
+          }
+      }
+    </script>
+        <sandbox>true</sandbox>
+      </definition>
+      <triggers/>
+      <disabled>false</disabled>
+    </flow-definition>

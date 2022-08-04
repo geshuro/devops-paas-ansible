@@ -1,0 +1,54 @@
+workspace: shared
+namespace: devops
+output_path: /tmp/ansible_tasks
+desired_deployment_name: artifactory
+helmchart_path: tmp/deploy_helms/sunat-cuc-artifactory-oss-helmchart/
+
+ingress_certificate_secret: '{{ "sunat-wildcard-secret"  if workspace == "shared" else  "sunat-tecnico-wildcard-secret" }}'
+database_connection_secret: artifactory-database-secret
+artifactory_masterkey_secret: artifactory-masterkey-secret
+
+artifactory_masterkey_secret_value: 4625a6b0f5271ea62d138009831611c91315e86ffabb7ac7351d1772208aea6c
+
+
+database_connection_secret_url: jdbc:postgresql://rw-rds-vpcshared-jbj-aurora-postgresql-xkm.sunat-cuc.int:5432/artifactory2
+database_connection_secret_user: artifactory
+database_connection_secret_password: $$cucarti34
+
+
+
+resources: |
+  requests:
+    memory: "100Mi"
+    cpu: "100m"
+  limits:
+    memory: "100Mi"
+    cpu: "100m"
+
+artifactory_oss_image: docker.bintray.io/jfrog/artifactory-oss
+artifactory_oss_imagetag: 7.6.3
+
+artifactory_oss_ingressroute_dns: '{{ "artifactory.devops-internal.sunat-cuc.int"  if workspace == "shared" else  "artifactorytec.devops-internal.sunat-cuc-tecnico.int" }}'
+
+artifactory_oss_ingressroute: |
+  redirect_http_to_https: true
+  match: "Host(`{{ artifactory_oss_ingressroute_dns }}`)"
+  tls:
+    domains:
+    - main: {{ artifactory_oss_ingressroute_dns }}
+    secretName: {{ ingress_certificate_secret }}
+
+artifactory_oss_databaseconnection: |
+  type: postgresql
+  driver: org.postgresql.Driver
+  secrets:
+    user:
+      name: "{{ database_connection_secret }}"
+      key: "database-user"
+    password:
+      name: "{{ database_connection_secret }}"
+      key: "database-password"
+    url:
+      name: "{{ database_connection_secret }}"
+      key: "database-url"
+

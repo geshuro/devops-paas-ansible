@@ -1,0 +1,82 @@
+workspace: pre
+namespace: velero
+output_path: /tmp/ansible_tasks
+desired_deployment_name: velero
+helmchart_path: tmp/deploy_helms/sunat-cuc-velero-helmchart/
+
+cloud_credentials_secret: velero-aws-credentials-secret
+
+bucket_backups_name:  '{{ "devops-velero-backups"  if workspace == "shared" else  "devops-tecnico-velero-backups" }}'
+
+velero_image: velero/velero
+velero_image_version: v1.4.2
+
+velero_metrics: |
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8085"
+    prometheus.io/path: "/metrics"
+
+velero_initContainers: |
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.1.0
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+velero_credentials: |
+  useSecret: true
+  existingSecret: {{ cloud_credentials_secret }}
+
+velero_configuration: |
+  provider: aws
+  backupStorageLocation:
+    bucket: '{{ bucket_backups_name }}'
+    config:
+      region: us-east-1
+  volumeSnapshotLocation:
+    config:
+      region: us-east-1
+
+velero_schedules: |
+  ingress-lan:
+    labels:
+      namespace: ingress-lan
+    schedule: "0 0 * * *"
+    template:
+      ttl: "168h0m0s"
+      includedNamespaces:
+      - ingress-lan
+      includedResources:
+        - '*'
+  monitoring:
+    labels:
+      namespace: monitoring
+    schedule: "0 0 * * *"
+    template:
+      ttl: "168h0m0s"
+      includedNamespaces:
+      - monitoring
+      includedResources:
+        - '*'
+  devops:
+    labels:
+      namespace: devops
+    schedule: "0 0 * * *"
+    template:
+      ttl: "168h0m0s"
+      includedNamespaces:
+      - devops
+      includedResources:
+        - '*'
+  cluster-tools:
+    labels:
+      namespace: cluster-tools
+    schedule: "0 0 * * *"
+    template:
+      ttl: "168h0m0s"
+      includedNamespaces:
+      - cluster-tools
+      includedResources:
+        - '*'

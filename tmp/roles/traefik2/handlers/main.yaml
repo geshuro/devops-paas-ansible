@@ -1,0 +1,4 @@
+---
+- name: Traefik was deployed
+  debug:
+    msg: Traefik was deployed at {{ namespace }}

@@ -1,0 +1,4 @@
+---
+- name: Jenkins was deployed
+  debug:
+    msg: Jenkins was deployed at {{ namespace }}

@@ -1,0 +1,100 @@
+    #   myViewsTabBar: "standard"
+    #   primaryView:
+    #     all:
+    #       name: "all"
+    #   views:
+    # {% for project in projects %}
+    #   - list:
+    #       columns:
+    #       - "status"
+    #       - "weather"
+    #       - "jobName"
+    #       - "lastSuccess"
+    #       - "lastFailure"
+    #       - "lastDuration"
+    #       - "buildButton"
+    #       description: "{{ project }}"
+    #       includeRegex: "^{{ project }}-.*"
+    #       name: "{{ project }}"
+    #       recurse: true
+    # {% endfor %}
+    #   - all:
+    #       name: "all"
+
+
+    jobs: |
+      jobs:
+      - script: >
+          pipelineJob('createJobs') {
+              quietPeriod(10)
+              concurrentBuild(false)
+              blockOn('createJobs')
+              logRotator(7,7,7,7)
+              definition {
+                  cpsScm {
+                      scm {
+                        git {
+                          remote {
+                            url 'https://myspecialurl.git'
+                            credentials("someid")
+                            }
+                            branch '*/master'
+                            scriptPath('code/createJobs.groovy')
+                            extensions {}
+                        }
+                      }
+                  }
+              }
+          }
+
+
+credentials:
+  system:
+    domainCredentials:
+    - credentials:
+      - string:
+          id: "devops-secret"
+          scope: GLOBAL
+          secret: "{AQAAABAAAANgwLdNAEARvgwfCMhUKd2qLobwnYbkSTeg6xOpA4SmRN9RMZIrt3IVFWyPlxKzmHggmIHk1sQabKXAFVq9RoPirwCFXk4CXwzAOrV6zwqF846d9q0nru5RcieAECkqtdAGCX4h41eNCDHujX+uwJeinsItl/PJZHvSAm9KPWeNPz/D/+guleRr/O+K++2tjFB/kViUF5QNb2sQsXgFh9IVf6ZzBxmjkN65XiN+f0yDy/J5DtZoDWPOUCerSAuQletJOcWec8EwfQW7h/vepZ7qEG3tPNXzfRyWDTiTWVf3iJisP4PdA/dK3w0Ge8LD25bQyjHf9wSHkL8H3gFs9uGlOMbfB8fimMjrXfk2YlMBF2PLfbDCWnEau3yonSIzUv5RDsh56AHpmFPpqZqQ7vMPJ/JyFY8nobJfx2DobIY86N5ZHRLee8hf5NOBay5quvcOG6grz+4kGN18o6alsmbYyCWdHlJ/bR5Fvngz6f2YxleoJ5WQOu6XeSQAogc+s18cQrH/fX537+h+YJ6HzlQVGx49gbV8rRYHo8EVFDKKeZ8gq9HwzoWWG/9qzp4kjcDF/Q34ltOGdE9gyvklXhurjJ25+yYTPl19cHRRl4x4dg3Urtr/rzXtR2PWaX/MVPaFpCD6LOLGsy350y5dsjm5kpC0mrQ+XiY5fsgGVzHvo6L9HMapD1Meeh+ot124BVdOiJnKbIUtbJRMO7tztkuBeLYbZ5XvBpjTjmtjxB4vuLn8FNdrriR4VuSNRBHAXD3JQ+YH5HNHX864zkHn0Fl6d0dhTVD5eLu5PbmbwrVfG8m12xuGlhrSc83VeUQD8h54ZgfOHlFpJPzCwE+GTGGl1sOk1TZTQ9ftzCEvCIRPHP5hAOLK4hMkR/vENUa0yhGnhsS6ynRft8zcBH49mOJ7GJSmEwlTGnilJ9g7Suf/D0h4M/dwowoQDLn15gIAiweetHKz0UMOMqs7ORlUR4jzft1/nJcJda+Kuy+cmNHCGDRWUlN6GvUA/LVtnMo16xfGMn5WOciVNX6W2+0/J3Dcj9ZqYniSaTCh4TF+BPd5q4oE5HenSDU8KXfuupQThhELfOgB3mj4ClajQFzuqu1H93y3Ulzdl/eQCM4IfwxL1zt7KiwOln/m/52lVRJTrS1/Dvkk5bM4o7KWrTjETrOk5g==}"
+      - usernamePassword:
+          id: "Gitlab-m2m-user"
+          password: "{AQAAABAAAAAgPwnmBsuirxCoE4ks616SPxGq3uRF3kC0vYkl08cB8Blfi9YjSkaOxbDULw1yJj26}"
+          scope: GLOBAL
+          username: "jenkins"
+      - usernamePassword:
+          id: "devops-sonar-dev-secret"
+          password: "{AQAAABAAAAAQhBqtLgMTVpJb+ifNjoBGZ8O9hoGCwaFX2s6V57VLd3M=}"
+          scope: GLOBAL
+          username: "admin"
+      - usernamePassword:
+          id: "devops-artifactory-dev-secret"
+          password: "{AQAAABAAAAAQpiK2f49iKuLlh0ol82q7Gir5GvVGC2ppxMkb6z4buUQ=}"
+          scope: GLOBAL
+          username: "admin"
+
+
+
+    jobs: |
+      jobs:
+      - script: >
+          pipelineJob('createJobs') {
+              quietPeriod(10)
+              concurrentBuild(false)
+              blockOn('createJobs')
+              logRotator(7,7,7,7)
+              definition {
+                  cpsScm {
+                      scm {
+                        git {
+                          remote {
+                            url 'https://myspecialurl.git'
+                            credentials("someid")
+                            }
+                            branch '*/master'
+                            scriptPath('code/createJobs.groovy')
+                            extensions {}
+                        }
+                      }
+                  }
+              }
+          }

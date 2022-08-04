@@ -1,0 +1,92 @@
+# Traefik2 Ansible Role
+
+Ansible Role para el despliegue de Traefik2 usando el Chart de Helm
+
+# Ejemplo de ejecución individual del Rol
+
+````bash
+---
+- hosts: localhost
+  roles:
+    - role: traefik2
+      vars:
+        namespace: ingress-internal-lan
+        output_path: /tmp/ansible_tasks
+        desired_deployment_name: traefik-internal
+        traefik_helmchart_path: /tmp/helm_charts/sunat-cuc-traefik2-helmchart/
+
+        traefik_image: traefik
+        traefik_version: 2.2.1
+
+        traefik_replicas: 2
+        traefik_deploymentAnnotations: |
+          route-type: internal,
+          load-balancer: classic
+
+        traefik_podDisruptionBudget_minAvailable: 1
+
+        traefik_serviceType: LoadBalancer
+        traefik_serviceAnnotations: |
+          service.beta.kubernetes.io/aws-load-balancer-internal: "true",
+          service.beta.kubernetes.io/aws-load-balancer-type: "nlb",
+          service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "route-type=internal,load-balancer=network,deployment=Traefik,cluster=shared,hostname=devops-internal.sunat-cuc.int"
+
+        traefik_maxUnavailable: 1
+        traefik_maxSurge: 1
+
+        traefik_globalArguments: |
+          - "--global.checknewversion=false"
+          - "--global.sendanonymoususage=false"
+
+        traefik_additionalArguments: |
+          - "--providers.kubernetesingress.ingressclass=traefik-internal"
+          - "--log.level=INFO"
+          - "--metrics.prometheus=true"
+          - "--metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000"
+          - "--metrics.prometheus.addEntryPointsLabels=true"
+          - "--metrics.prometheus.addServicesLabels=true"
+          - "--entryPoints.metrics.address=:8082"
+          - "--metrics.prometheus.entryPoint=metrics"
+          - "--serversTransport.insecureSkipVerify=true"
+
+        traefik_resources: |
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+
+        traefik_autoscaling_minReplicas: 2
+        traefik_autoscaling_maxReplicas: 10
+        traefik_autoscaling_metrics: |
+          - type: Resource
+            resource:
+              name: cpu
+              targetAverageUtilization: 60
+          - type: Resource
+            resource:
+              name: memory
+              targetAverageUtilization: 60
+
+        traefik_ports_metrics: |
+          port: 8082
+          expose: true
+          exposedPort: 8082
+          protocol: TCP
+
+        traefik_ports_web: |
+          port: 8000
+          expose: true
+          exposedPort: 80
+          protocol: TCP
+
+        traefik_ports_websecure: |
+          port: 8443
+          expose: true
+          exposedPort: 443
+          protocol: TCP
+
+  tasks:
+
+````

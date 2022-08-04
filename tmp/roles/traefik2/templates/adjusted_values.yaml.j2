@@ -1,0 +1,208 @@
+{% if traefik_image is defined %}
+{% if traefik_version is defined %}
+image:
+  name: {{ traefik_image }}
+  tag: {{ traefik_version }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+additionalArguments:
+  - "--log.level=DEBUG"
+
+{% if traefik_resources is defined %}
+resources: 
+{{ traefik_resources|indent(2, True) }}
+{% else %}
+{% endif %}
+
+{% if traefik_replicas is defined 
+or traefik_additionalContainers is defined 
+or traefik_deploymentAnnotations is defined
+or traefik_podAnnotations is defined
+or traefik_initContainers is defined %}
+deployment:
+  enabled: true
+{% if traefik_replicas is defined %}
+  replicas: {{ traefik_replicas }}
+{% else %}
+{% endif %}
+{% if traefik_additionalContainers is defined %}
+  additionalContainers:
+{{ traefik_additionalContainers|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if traefik_deploymentAnnotations is defined %}
+  annotations: {
+{{ traefik_deploymentAnnotations|indent(4, True) }}
+  }
+{% else %}
+{% endif %}
+{% if traefik_podAnnotations is defined %}
+  podAnnotations: {
+{{ traefik_podAnnotations|indent(4, True) }}
+  }
+{% else %}
+{% endif %}
+{% if traefik_initContainers is defined %}
+  initContainers: 
+{{ traefik_initContainers|indent(4, True) }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+{% if traefik_podDisruptionBudget_maxUnavailable is defined 
+or traefik_podDisruptionBudget_minAvailable is defined  %}
+podDisruptionBudget:
+  enabled: true
+{% if traefik_podDisruptionBudget_maxUnavailable is defined %}
+  maxUnavailable: {{ traefik_podDisruptionBudget_maxUnavailable }}
+{% else %}
+{% endif %}
+{% if traefik_podDisruptionBudget_minAvailable is defined %}
+  minAvailable: {{ traefik_podDisruptionBudget_minAvailable }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+{% if traefik_serviceType is defined 
+or traefik_serviceAnnotations is defined 
+or traefik_serviceSpec is defined 
+or traefik_service_externalIPs is defined 
+or traefik_service_loadBalancerSourceRanges is defined %}
+service:
+  enabled: true
+{% if traefik_serviceType is defined %}
+  nodeport: {{ traefik_nodeport }}
+{% else %}
+{% endif %}
+{% if traefik_serviceType is defined %}
+  type: {{ traefik_serviceType }}
+{% else %}
+{% endif %}
+{% if traefik_serviceAnnotations is defined %}
+  annotations: {
+{% if provider == "aws" %}
+{{ traefik_serviceAnnotations_aws|indent(4, True) }}
+{% else %}
+{{ traefik_serviceAnnotations_onprem|indent(4, True) }}
+{% endif %}
+  }
+{% else %}
+{% endif %}
+{% if traefik_serviceSpec is defined %}
+  spec: {
+{{ traefik_serviceSpec|indent(4, True) }}
+  }
+{% else %}
+{% endif %}
+{% if traefik_service_externalIPs is defined %}
+  externalIPs:
+{{ traefik_service_externalIPs|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if traefik_service_loadBalancerSourceRanges is defined %}
+  loadBalancerSourceRanges:
+{{ traefik_serviceloadBalancerSourceRanges|indent(4, True) }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+{% if traefik_maxUnavailable is defined 
+or traefik_maxSurge is defined %}
+rollingUpdate:
+{% if traefik_maxUnavailable is defined %}
+  maxUnavailable: {{ traefik_maxUnavailable }}
+{% else %}
+{% endif %}
+{% if traefik_maxSurge is defined %}
+  maxSurge: {{ traefik_maxSurge }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+{% if traefik_globalArguments is defined %}
+globalArguments:
+{{traefik_globalArguments|indent(2, True) }}
+{% else %}
+{% endif %}
+
+{% if traefik_additionalArguments is defined %}
+additionalArguments:
+{{traefik_additionalArguments|indent(2, True) }}
+{% else %}
+{% endif %}
+
+{% if traefik_autoscaling_minReplicas is defined 
+or traefik_autoscaling_maxReplicas is defined 
+or traefik_autoscaling_metrics is defined %}
+autoscaling:
+  enabled: true
+{% if traefik_autoscaling_minReplicas is defined %}
+  minReplicas: {{traefik_autoscaling_minReplicas }}
+{% else %}
+{% endif %}
+{% if traefik_autoscaling_maxReplicas is defined %}
+  maxReplicas: {{traefik_autoscaling_maxReplicas }}
+{% else %}
+{% endif %}
+{% if traefik_autoscaling_metrics is defined %}
+  metrics:
+{{traefik_autoscaling_metrics|indent(2, True) }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+{% if traefik_dashboard_annotations is defined 
+or traefik_dashboard_labels is defined %}
+ingressRoute:
+  dashboard:
+    enabled: true
+{% if traefik_dashboard_annotations is defined %}
+    annotations: {
+{{traefik_dashboard_annotations|indent(6, True) }}
+    }
+{% else %}
+{% endif %}
+{% if traefik_dashboard_labels is defined %}
+    labels: {
+{{traefik_dashboard_labels|indent(6, True) }}
+    }
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}
+
+{% if traefik_ports_traefik is defined 
+or traefik_ports_web is defined 
+or traefik_ports_websecure is defined 
+or traefik_ports_metrics is defined %}
+ports:
+{% if traefik_ports_traefik is defined %}
+  traefik:
+{{ traefik_ports_traefik|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if traefik_ports_web is defined %}
+  web:
+{{ traefik_ports_web|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if traefik_ports_websecure is defined %}
+  websecure:
+{{ traefik_ports_websecure|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if traefik_ports_metrics is defined %}
+  metrics:
+{{ traefik_ports_metrics|indent(4, True) }}
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}

@@ -1,0 +1,69 @@
+---
+- name: Check if the namespace exist
+  k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: "{{ namespace }}"
+  register: traefik_namespace
+
+- name: Check if the Helm Chart folder exist
+  stat:
+    path: "{{ traefik_helmchart_path }}"
+  register: traefik_helmchart_path_stat
+
+- name: Ensure {{ output_path  }} exist
+  file:
+    path: "{{ output_path }}"
+    state: directory
+  when:
+    - traefik_namespace.resources[0].status.phase is defined
+    - traefik_helmchart_path_stat.stat.exists == true
+
+- name: Read {{ output_path  }} folder
+  find:
+    paths: "{{ output_path }}"
+    patterns: "*"
+  register: files_to_delete
+  when: 
+    - traefik_namespace.resources[0].status.phase is defined
+    - traefik_helmchart_path_stat.stat.exists == true
+
+- name: Delete old files (if it exist)
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+  when: 
+    - traefik_namespace.resources[0].status.phase is defined
+    - traefik_helmchart_path_stat.stat.exists == true
+
+- name: Create _yaml_ file to overwrite the Chart default values
+  template:
+    src: ../templates/adjusted_values.yaml.j2
+    dest: "{{ output_path }}/adjusted_values.yaml"
+  when: 
+    - traefik_namespace.resources[0].status.phase is defined
+    - traefik_helmchart_path_stat.stat.exists == true
+
+- name: Deploy the HelmChart
+  shell: helm upgrade --install "{{ desired_deployment_name }}" -f "{{ output_path }}/adjusted_values.yaml" "{{ traefik_helmchart_path }}/." --namespace "{{ namespace_traefik }}" 
+  when: 
+    - traefik_namespace.resources[0].status.phase is defined
+    - traefik_helmchart_path_stat.stat.exists == true
+
+- name: Delete {{ output_path }} as clean up task
+  file:
+    path: "{{ output_path }}"
+    state: absent
+  when: 
+    - traefik_namespace.resources[0].status.phase is defined
+    - traefik_helmchart_path_stat.stat.exists == true
+  notify: Traefik was deployed
+
+- debug:
+    msg: The {{ namespace }} namespace does not exist
+  when: traefik_namespace.resources[0].status.phase is not defined
+
+- debug:
+    msg: "The Helm Chart folder does not exists"
+  when: traefik_helmchart_path_stat.stat.exists == false

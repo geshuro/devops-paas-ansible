@@ -1,0 +1,44 @@
+workspace: shared
+namespace: devops
+output_path: /tmp/ansible_tasks
+desired_deployment_name: jfrog-containerregistry
+helmchart_path: tmp/deploy_helms/sunat-cuc-artifactory-jcr-helmchart/
+
+ingress_certificate_secret: '{{ "sunat-wildcard-secret"  if workspace == "shared" else  "sunat-tecnico-wildcard-secret" }}'
+database_connection_secret: containerregistry-database-secret
+containerregistry_masterkey_secret: containerregistry-masterkey-secret
+
+containerregistry_masterkey_secret_value: 9be3027a90e0737ba48b0b6e42dc671f2148b67418dc68e9e1f2d645528e423b
+
+database_connection_secret_url: jdbc:postgresql://rw-rds-vpcshared-jbj-aurora-postgresql-xkm.sunat-cuc.int:5432/container_registry2
+database_connection_secret_user: container_registry
+database_connection_secret_password: $$cuccont56
+
+
+containerregistry_oss_image: docker.bintray.io/jfrog/artifactory-jcr
+containerregistry_oss_imagetag: 7.6.3
+
+containerregistry_oss_ingressroute_dns: '{{ "jfcr.devops-internal.sunat-cuc.int"  if workspace == "shared" else  "jfcrtec.devops-internal.sunat-cuc-tecnico.int" }}'
+
+containerregistry_oss_ingressroute: |
+  redirect_http_to_https: true
+  match: "Host(`{{ containerregistry_oss_ingressroute_dns }}`)"
+  tls:
+    domains:
+    - main: {{ containerregistry_oss_ingressroute_dns }}
+    secretName: {{ ingress_certificate_secret }}
+
+containerregistry_oss_databaseconnection: |
+  type: postgresql
+  driver: org.postgresql.Driver
+  secrets:
+    user:
+      name: "{{ database_connection_secret }}"
+      key: "database-user"
+    password:
+      name: "{{ database_connection_secret }}"
+      key: "database-password"
+    url:
+      name: "{{ database_connection_secret }}"
+      key: "database-url"
+

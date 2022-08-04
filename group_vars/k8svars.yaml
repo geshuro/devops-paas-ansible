@@ -1,0 +1,7 @@
+---
+kube_resource_apply: true
+kube_resource_create_namespace: false
+kube_resource_secrets: {}
+kube_resource_secrets_files: []
+kube_resource_UNSAFE_show_logs: false
+kube_resource_validate_options: {}

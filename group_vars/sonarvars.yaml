@@ -1,0 +1,50 @@
+workspace: tec
+namespace: devops
+output_path: /tmp/ansible_tasks
+desired_deployment_name: sonar
+helmchart_path: tmp/deploy_helms/sunat-cuc-sonarqube-helmchart/
+
+ingress_certificate_secret: '{{ "sunat-wildcard-secret"  if workspace == "shared" else  "sunat-tecnico-wildcard-secret" }}'
+
+postgresql_database_secret: sonarqube-postgresql-secret
+POSTGRESQL_SERVER: '{{ "rw-rds-vpcshared-jbj-aurora-postgresql-xkm.sunat-cuc.int"  if workspace == "shared" else  "10.20.16.104:5432,10.20.16.115" }}'
+POSTGRESQL_DATABASE: '{{ "sonarqube2"  if workspace == "shared" else  "sonar" }}'
+POSTGRESQL_USERNAME: '{{ "sonarqube"  if workspace == "shared" else  "sonar" }}'
+psql_pwd_value: '{{ JCRjdWNzb25hcjEy  if workspace == "shared" else  "c29uYXI=" }}'
+
+
+sonarqube_image: sonarqube
+sonarqube_image_version: 8.2-community
+
+sonarqube_ingressroute_dns: '{{ "sonarqube.devops-internal.sunat-cuc.int"  if workspace == "shared" else  "sonarqubetec.devops-internal.sunat-cuc-tecnico.int" }}'
+
+sonarqube_ingressroute: |
+  redirect_http_to_https: true
+  match: "Host(`{{ sonarqube_ingressroute_dns }}`)"
+  tls:
+    domains:
+    - main: {{ sonarqube_ingressroute_dns }}
+    secretName: {{ ingress_certificate_secret }}
+
+sonarqube_plugins: |
+  install:
+    - "https://binaries.sonarsource.com/Distribution/sonar-java-plugin/sonar-java-plugin-6.1.0.20866.jar"
+    - "https://binaries.sonarsource.com/Distribution/sonar-jacoco-plugin/sonar-jacoco-plugin-1.0.2.475.jar"
+    - "https://binaries.sonarsource.com/Distribution/sonar-javascript-plugin/sonar-javascript-plugin-6.2.0.12043.jar"
+    - "https://binaries.sonarsource.com/Distribution/sonar-typescript-plugin/sonar-typescript-plugin-2.1.0.4359.jar"
+    - "https://github.com/dmeiners88/sonarqube-prometheus-exporter/releases/download/v1.0.0-SNAPSHOT-2018-07-04/sonar-prometheus-exporter-1.0.0-SNAPSHOT.jar"
+    # - "https://binaries.sonarsource.com/Distribution/sonar-checkstyle-plugin/sonar-checkstyle-plugin-2.4.jar"
+
+  deleteDefaultPlugins: true
+
+sonarqube_elasticsearch_configureNode: false
+sonarqube_elasticsearch_bootstrapChecks: false
+
+sonarqube_sonarProperties: |
+  sonar.forceAuthentication: true
+
+sonarqube_postgresql_configs: |
+  postgresqlServer: '{{ POSTGRESQL_SERVER }}'
+  postgresqlDatabase: '{{ POSTGRESQL_DATABASE }}'
+  existingSecret: sonarqube-postgresql-secret
+  postgresqlUsername: '{{ POSTGRESQL_USERNAME }}'

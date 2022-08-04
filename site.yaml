@@ -1,0 +1,137 @@
+---
+- hosts: localhost
+
+### por cada  rol a desplegar descomente el bloque que necesite
+## estas son las variables globales para todos los roles
+  vars:
+    workspace: pre
+    namespace: devops-ns
+    namespace_traefik: ingress-lan
+    workspace_grafana: shared
+    namespace_grafana: monitoring
+    namespace_kibana: logging
+    namespace_metrics: cluster-tools
+    metrics_server_replicas: 1
+    resourcequota_name: basic-resourcequota
+    quota_limitrange_name: default-limitrange
+    namespace_velero: velero
+    enabled_jenkins_secrets: false
+    enabled_sonar_secrets: false
+    enabled_grafana_secrets: false
+    enabled_logging_secrets: false
+    enabled_traefik: false
+    enabled_jenkins: true 
+    enabled_sonar: false
+    enabled_prometheus: false
+    enabled_grafana: false
+    enabled_kibana: false
+    enabled_fluentbit: false  
+    enabled_secrets: false
+    # namespacetools: "variable a reutilizar"
+## si lo deseas pasar por archivos tambien puedes hacerlo descomentando este bloque
+  vars_files:
+    # - ./group_vars/secrets.yaml
+    # - ./group_vars/jenkinsvars.yaml
+    # - ./group_vars/grafanavars.yaml
+    # - ./group_vars/metrics.yaml
+    # - ./group_vars/quotavars.yaml
+    # - ./group_vars/traefikvars.yaml
+    # - ./group_vars/velerovars.yaml
+    # - ./group_vars/sonarvars.yaml
+    # - ./group_vars/artifactoryvars.yaml
+    # - ./group_vars/jcrvars.yaml
+
+  pre_tasks:
+  #   - shell: echo 'hello'
+  #tasks:
+
+## descomentando este bloque mas la variable secrets.yaml se generaran los secrets y certificados para los namespaces necesarios
+
+
+    # - name: Create certificates
+    #   k8s:
+    #     state: present
+    #     definition: "{{ lookup('template', 'secrets/certificates.j2') }}"
+    #   no_log: false
+
+  roles:
+
+# descomentar para  crear los namespaces iniciales
+    # - role: "./tmp/roles/k8s-namespaces"
+    #   vars:
+    #     namespaces_to_create:
+    #       - namespace: ingress-lan
+    #       - namespace: ingress-dmz
+    #       - namespace: devops
+    #       - namespace: cluster-tools
+    #       - namespace: monitoring
+    #       - namespace: logging
+    #       - namespace: velero
+
+####### secrets role init ####################
+    - role: "./tmp/roles/secrets"
+      vars:
+        tool_secrets: jenkins
+        namespace_list:
+          - devops-ns
+      when: enabled_jenkins_secrets
+
+    - role: "./tmp/roles/secrets"
+      vars:
+        tool_secrets: sonar
+        namespace_list:
+          - devops-ns
+      when: enabled_sonar_secrets
+
+    - role: "./tmp/roles/secrets"
+      vars:
+        tool_secrets: grafana
+        namespace_list:
+          - monitoring
+      when: enabled_grafana_secrets
+
+    - role: "./tmp/roles/secrets"
+      vars:
+        namespace_list:
+          - logging
+      when: enabled_logging_secrets
+
+####### traefik2 role init ####################
+#    - role: "./tmp/roles/traefik2"
+#      when: enabled_traefik
+       
+####### traefik2 role init ####################
+
+####### jenkins role init ####################
+    - role: "./tmp/roles/jenkins"
+      when: enabled_jenkins
+
+####### jenkins role init ####################
+
+####### sonar role init ####################
+#    - role: "./tmp/roles/sonarqube2"
+#      when: enabled_sonar
+
+####### sonar role init ####################
+
+####### prometheus role init ####################
+#    - role: "./tmp/roles/prometheus"
+#      when: enabled_prometheus
+
+####### prometheus role end ####################
+
+####### grafana role init ####################
+#    - role: "./tmp/roles/grafana"
+#      when: enabled_grafana
+
+####### grafana role end ####################
+
+####### kibana role init ####################
+#    - role: "./tmp/roles/kibana"
+#      when: enabled_kibana 
+####### kibana role init ####################
+
+####### fluentbit role init ####################
+#    - role: "./tmp/roles/fluentbit"
+#      when: enabled_fluentbit
+####### fluentbit role init ####################

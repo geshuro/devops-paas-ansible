@@ -1,0 +1,91 @@
+workspace: shared
+namespace: monitoring
+output_path: /tmp/ansible_tasks
+desired_deployment_name: grafana
+helmchart_path: tmp/deploy_helms/sunat-cuc-grafana-helmchart/
+
+ingress_certificate_secret: '{{ "sunat-wildcard-secret"  if workspace == "shared" else  "sunat-tecnico-wildcard-secret" }}'
+
+grafana_image: grafana/grafana
+grafana_image_version: 7.1.3
+
+admin_user_credentials_secret: grafana-admin-credentials-secret
+admin_user_credentials_secret_userKey: admin-username
+admin_user_credentials_secret_passwordKey: admin-password
+
+admin_userKey: admin
+admin_passwordKey: Devops2020.
+
+grafana_serviceType: ClusterIP
+
+grafana_datasources: |
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus-prometheus-server
+      access: proxy
+      isDefault: true
+    - name: Prometheus-Dev
+      type: prometheus
+      url: http://prometheus-server-dev
+      access: proxy
+      isDefault: false
+    - name: Prometheus-QA
+      type: prometheus
+      url: http://prometheus-server-qa
+      access: proxy
+      isDefault: false
+
+grafana_dashboardProviders: |
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+    - name: 'infra'
+      orgId: 1
+      folder: 'Infra'
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /var/lib/grafana/dashboards/infra
+    - name: 'apps'
+      orgId: 1
+      folder: 'Applications'
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /var/lib/grafana/dashboards/apps
+
+#descargar los json de la pagina de grafana y meterlos en la carpeta dashboards
+grafana_dashboards: |
+  infra:
+    traefik:
+      file: dashboards/traefik.json
+    nodes:
+      file: dashboards/node-exporter.json
+    deployments:
+      file: dashboards/all-deployments.json
+  apps:
+    sonarqube:
+      file: dashboards/sonarqube.json
+
+grafana_ingressroute_dns: '{{ "grafana.devops-internal.sunat-cuc.int"  if workspace == "shared" else  "grafanatec.devops-internal.sunat-cuc-tecnico.int" }}'
+
+grafana_ingressroute: |
+  redirect_http_to_https: true
+  match: "Host(`{{ grafana_ingressroute_dns }}`)"
+  tls:
+    domains:
+    - main: {{ grafana_ingressroute_dns }}
+    secretName: {{ ingress_certificate_secret }}
+
+resources: |
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

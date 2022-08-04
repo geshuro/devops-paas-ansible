@@ -1,0 +1,16 @@
+workspace: shared
+namespace: cluster-tools
+output_path: /tmp/ansible_tasks
+desired_deployment_name: metrics-server
+helmchart_path: tmp/deploy_helms/sunat-cuc-metrics-server-helmchart/
+
+metrics_server_image: k8s.gcr.io/metrics-server-amd64
+metrics_server_version: v0.3.6
+
+metrics_server_replicas: 1
+
+metrics_server_serviceAccount_name: metrics-server-sa
+
+metrics_server_args: |
+  - --kubelet-insecure-tls
+  - --kubelet-preferred-address-types=InternalIP

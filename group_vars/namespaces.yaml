@@ -1,0 +1,9 @@
+workspace: shared
+namespaces_to_create:
+  - namespace: devops
+#   - namespace: ingress-lan
+#   - namespace: ingress-dmz
+#   - namespace: cluster-tools
+#   - namespace: monitoring
+#   - namespace: logging
+#   - namespace: velero

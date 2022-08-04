@@ -1,0 +1,223 @@
+{% if jenkins_agentsCap is defined %}
+agent:
+  containerCap: {{ jenkins_agentsCap }}
+{% else %}
+{% endif %}
+
+{% if jenkins_persistence is defined %}
+persistence:
+  enabled: true
+{{ jenkins_persistence|indent(2, True) }}
+{% else %}
+{% endif %}
+
+{% if jenkins_serviceaccount_name is defined %}
+serviceAccount:
+  create: true
+  name: {{ jenkins_serviceaccount_name }}
+{% else %}
+{% endif %}
+{% if jenkins_httpsKeyStore is defined
+or jenkins_image is defined
+or jenkins_imageTag is defined
+or jenkins_imagePullPolicy is defined
+or jenkins_imagePullSecret is defined
+or jenkins_installPlugins is defined
+or jenkins_ingress is defined
+or jenkins_ingressroute is defined
+or jenkins_openshiftroute is defined
+or jenkins_serviceType is defined
+or jenkins_podLabels is defined
+or jenkins_serviceLabels is defined
+or jenkins_deploymentLabels is defined
+or jenkins_serviceAnnotations is defined
+or jenkins_resources is defined
+or jenkins_scriptApproval is defined
+or jenkins_initScripts is defined
+or jenkins_customInitContainers is defined
+or jenkins_enableXmlConfig is defined
+or jenkins_initializeOnce is defined
+or jenkins_overwritePluginsFromImage is defined
+or jenkins_enableRawHtmlMarkupFormatter is defined
+or jenkins_customConfigMap is defined
+or jenkins_overwriteConfig is defined
+or jenkins_overwriteJobs is defined
+or jenkins_JCasC is defined
+or jenkins_jobsasxml is defined
+or admin_user_credentials_secret is defined
+or admin_user_credentials_secret_userKey is defined
+or admin_user_credentials_secret_passwordKey is defined 
+or jenkins_healthProbeLivenessInitialDelay is defined
+or jenkins_healthProbeReadinessInitialDelay is defined %}
+master:
+{% if jenkins_healthProbeLivenessInitialDelay is defined %}
+  healthProbeLivenessInitialDelay: {{ jenkins_healthProbeLivenessInitialDelay }}
+{% else %}
+{% endif %}
+{% if jenkins_healthProbeReadinessInitialDelay is defined %}
+  healthProbeReadinessInitialDelay: {{ jenkins_healthProbeReadinessInitialDelay }}
+{% else %}
+{% endif %}
+{% if jenkins_httpsKeyStore is defined %}
+  httpsKeyStore:
+{{ jenkins_httpsKeyStore|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_image is defined %}
+  image: {{ jenkins_image }}
+{% else %}
+{% endif %}
+{% if jenkins_imageTag is defined %}
+  tag: {{ jenkins_imageTag }}
+{% else %}
+{% endif %}
+{% if jenkins_imagePullPolicy is defined %}
+  imagePullPolicy: {{ jenkins_imagePullPolicy }}
+{% else %}
+{% endif %}
+{% if jenkins_imagePullSecret is defined %}
+  imagePullSecretName: {{ jenkins_imagePullSecret }}
+{% else %}
+{% endif %}
+{% if jenkins_installPlugins is defined %}
+  installPlugins:
+{{ jenkins_installPlugins|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_ingressroute is defined %}
+  ingressroute:
+    enabled: true
+{{ jenkins_ingressroute|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_ingress is defined %}
+  ingress:
+    enabled: true
+{{ jenkins_ingress|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_openshiftroute is defined %}
+  route:
+    enabled: true
+{{ jenkins_openshiftroute|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_serviceType is defined %}
+  serviceType: {{ jenkins_serviceType }}
+{% else %}
+{% endif %}
+{% if jenkins_podLabels is defined %}
+  podLabels:
+{{ jenkins_podLabels|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_serviceLabels is defined %}
+  serviceLabels:
+{{ jenkins_serviceLabels|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_deploymentLabels is defined %}
+  deploymentLabels:
+{{ jenkins_deploymentLabels|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_serviceAnnotations is defined %}
+  serviceAnnotations:
+{{ jenkins_serviceAnnotations|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_resources is defined %}
+  resources:
+{{ jenkins_resources|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_podAnnotations is defined %}
+  podAnnotations:
+{{ jenkins_podAnnotations|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_deploymentAnnotations is defined %}
+  deploymentAnnotations:
+{{ jenkins_deploymentAnnotations|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_nodeSelector is defined %}
+  nodeSelector:
+{{ jenkins_nodeSelector|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_deploymentTolerations is defined %}
+  tolerations:
+{{ jenkins_deploymentTolerations|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_scriptApproval is defined %}
+  scriptApproval:
+{{ jenkins_scriptApproval|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_initScripts is defined %}
+  initScripts:
+{{ jenkins_initScripts|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_customInitContainers is defined %}
+  customInitContainers:
+{{ jenkins_customInitContainers|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_enableXmlConfig is defined %}
+  enableXmlConfig: {{ jenkins_enableXmlConfig }}
+{% else %}
+{% endif %}
+{% if jenkins_initializeOnce is defined %}
+  initializeOnce: {{ jenkins_initializeOnce }}
+{% else %}
+{% endif %}
+{% if jenkins_overwritePluginsFromImage is defined %}
+  overwritePluginsFromImage: {{ jenkins_overwritePluginsFromImage }}
+{% else %}
+{% endif %}
+{% if jenkins_enableRawHtmlMarkupFormatter is defined %}
+  enableRawHtmlMarkupFormatter: {{ jenkins_enableRawHtmlMarkupFormatter }}
+{% else %}
+{% endif %}
+{% if jenkins_customConfigMap is defined %}
+  customConfigMap: {{ jenkins_customConfigMap }}
+{% else %}
+{% endif %}
+{% if jenkins_overwriteConfig is defined %}
+  overwriteConfig: {{ jenkins_overwriteConfig }}
+{% else %}
+{% endif %}
+{% if jenkins_overwriteJobs is defined %}
+  overwriteJobs: {{ jenkins_overwriteJobs }}
+{% else %}
+{% endif %}
+{% if jenkins_JCasC is defined %}
+  JCasC:
+    enabled: true
+{{ jenkins_JCasC|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if jenkins_jobsasxml is defined %}
+  jobs:
+{{ jenkins_jobsasxml|indent(4, True) }}
+{% else %}
+{% endif %}
+{% if admin_user_credentials_secret is defined %}
+  admin:
+    existingSecret: "{{ admin_user_credentials_secret }}"
+{% if admin_user_credentials_secret_userKey is defined %}
+    userKey: {{ admin_user_credentials_secret_userKey }}
+{% else %}
+{% endif %}
+{% if admin_user_credentials_secret_passwordKey is defined %}
+    passwordKey: {{ admin_user_credentials_secret_passwordKey }}
+{% else %}
+{% endif %}
+    adminUser: "admin"
+{% else %}
+{% endif %}
+{% else %}
+{% endif %}

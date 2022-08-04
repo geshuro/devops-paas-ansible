@@ -1,0 +1,96 @@
+---
+- name: Check if the namespace exist
+  k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: "{{ namespace }}"
+  register: namespace_exist
+
+- name: Check if the Helm Chart folder exist
+  stat:
+    path: "{{ helmchart_path }}"
+  register: helmchart_path_stat
+
+- name: Ensure {{ output_path  }} exist
+  file:
+    path: "{{ output_path }}"
+    state: directory
+  when:
+    - namespace_exist.resources[0].status.phase is defined
+    - helmchart_path_stat.stat.exists == true
+
+- name: Check an existing Ingress certificate secret
+  k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ ingress_certificate_secret }}" 
+    namespace: "{{ namespace }}"
+  register: ingress_certificate_secret_exist
+
+- name: Check an existing Admin credentials secret
+  k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ admin_user_credentials_secret }}" 
+    namespace: "{{ namespace }}"
+  register: admin_user_credentials_secret_exist
+  when:
+    - namespace_exist.resources[0].status.phase is defined
+    - admin_user_credentials_secret is defined
+
+- name: Read {{ output_path  }} folder
+  find:
+    paths: "{{ output_path }}"
+    patterns: "*"
+  register: files_to_delete
+  when: 
+    - namespace_exist.resources[0].status.phase is defined
+    - helmchart_path_stat.stat.exists == true
+
+- name: Delete old files (if it exist)
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+  when: 
+    - namespace_exist.resources[0].status.phase is defined
+    - helmchart_path_stat.stat.exists == true
+
+- name: Create _yaml_ file to overwrite the Chart default values
+  template:
+    src: ../templates/adjusted_values.yaml.j2
+    dest: "{{ output_path }}/adjusted_values.yaml"
+  when: 
+    - namespace_exist.resources[0].status.phase is defined
+    - helmchart_path_stat.stat.exists == true
+
+- name: Deploy the HelmChart
+  shell: helm upgrade --install "{{ desired_deployment_name }}" -f "{{ output_path }}/adjusted_values.yaml" "{{ helmchart_path }}/." --namespace "{{ namespace }}"
+  when: 
+    - namespace_exist.resources[0].status.phase is defined
+    - helmchart_path_stat.stat.exists == true
+
+- name: Delete {{ output_path }} as clean up task
+  file:
+    path: "{{ output_path }}"
+    state: absent
+  when: 
+    - namespace_exist.resources[0].status.phase is defined
+    - helmchart_path_stat.stat.exists == true
+  notify: Jenkins was deployed
+
+- debug:
+    msg: The {{ namespace }} namespace does not exist
+  when: namespace_exist.resources[0].status.phase is not defined
+
+- debug:
+    msg: "The Helm Chart folder does not exists"
+  when: helmchart_path_stat.stat.exists == false
+
+- debug:
+    msg: "WARNING, the Ingress certificate secret DOES NOT EXIST"
+  when: ingress_certificate_secret_exist.resources[0].metadata.name is not defined
+
+- debug:
+    msg: "WARNING, the Admin Credentials secret DOES NOT EXIST"
+  when: admin_user_credentials_secret_exist.resources[0].metadata.name is not defined
